@@ -3,18 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Personal Dashboard</title>
+    <title>Yeji Space | Grok Style</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* 极光配色 */
-            --bg-gradient: linear-gradient(125deg, #FF9A9E 0%, #FECFEF 30%, #E0C3FC 60%, #8EC5FC 100%);
-            /* 玻璃材质 */
-            --glass-base: rgba(255, 255, 255, 0.25);
-            --glass-hover: rgba(255, 255, 255, 0.45);
-            --glass-border: rgba(255, 255, 255, 0.55);
-            --glass-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            --text-color: #1d1d1f;
-            --blur: 40px;
+            --bg-color: #000000;
+            --text-color: #ffffff;
         }
 
         * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
@@ -27,78 +22,71 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            background-color: var(--bg-color);
+            position: relative;
         }
 
-        /* 动态背景 */
-        .mesh-bg {
+        /* ================= 核心修改：WebGL 画布 ================= */
+        #gl-canvas {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            background: var(--bg-gradient);
-            background-size: 400% 400%;
-            animation: fluid 15s ease infinite;
-        }
-        @keyframes fluid { 
-            0% { background-position: 0% 50%; } 
-            50% { background-position: 100% 50%; } 
-            100% { background-position: 0% 50%; } 
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: -2;
+            /* 稍微增加对比度，让黑更黑，光更亮 */
+            filter: contrast(1.1) brightness(1.0);
         }
 
-        /* 顶部时间 */
-        .header-time { margin-top: 5vh; text-align: center; z-index: 10; color: #333; }
-        .time-big { font-size: 100px; font-weight: 600; letter-spacing: -3px; line-height: 1; }
-        .date-text { font-size: 20px; font-weight: 500; opacity: 0.6; margin-top: 10px; }
+        /* ================= 核心修改：背景大字 Yeji (完美复刻 Grok 风格) ================= */
+        .bg-text-container {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1; 
+            pointer-events: none;
+            /* 关键：Overlay 混合模式让文字根据背景亮度变化 */
+            mix-blend-mode: overlay;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
 
-        /* 超宽布局 */
+        .bg-text {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 900;
+            /* 根据 Yeji 四个字母调整大小，让它撑满屏幕中心但不过大 */
+            font-size: 30vw; 
+            text-transform: uppercase;
+            /* 稍微紧凑一点的字间距 */
+            letter-spacing: -1vw; 
+            line-height: 1;
+            white-space: nowrap;
+            
+            /* Grok 风格精髓：
+               1. 不是纯白，带一点透明度 (0.85)，配合 Overlay 产生玻璃感。
+               2. 边缘有一点点模糊 (blur 3px)，模拟光晕。
+               3. 稍微降低文字本身亮度，让背景的高光“穿透”文字。
+            */
+            color: rgba(255, 255, 255, 0.85);
+            filter: blur(3px); 
+            
+            /* 模拟文字表面微弱的金属光泽 */
+            text-shadow: 0 0 30px rgba(255,255,255,0.1);
+        }
+
+
+        /* ================= UI 界面 (保持原样) ================= */
+        
+        .header-time { margin-top: 10vh; text-align: center; z-index: 10; transition: all 0.3s; text-shadow: 0 0 20px rgba(0,0,0,1); }
+        .time-big { font-size: 100px; font-weight: 700; letter-spacing: -3px; line-height: 1; color: #fff; }
+        .date-text { font-size: 20px; font-weight: 500; opacity: 0.6; margin-top: 10px; color: #ccc; }
+
         .stage {
             display: flex;
-            width: 94%; max-width: 1900px; height: 580px;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 30px; z-index: 5;
+            width: 100%; height: auto; align-items: center; justify-content: center;
+            margin-top: 50px; z-index: 5;
         }
 
-        /* 左右侧边卡片 */
-        .side-card {
-            width: 380px;
-            height: 100%;
-            background: var(--glass-base);
-            backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
-            border: 1px solid var(--glass-border);
-            border-radius: 40px;
-            box-shadow: var(--glass-shadow);
-            transition: transform 0.3s;
-        }
-        .side-card:hover { transform: translateY(-10px); background: var(--glass-hover); }
-
-        /* 修改：Music Box 样式调整为 Flex 布局以居中图标 */
-        .music-box { 
-            overflow: hidden; 
-            padding: 0;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            text-decoration: none; /* 去掉下划线 */
-            color: #333;
-            cursor: pointer;
-        }
-        
-        .cal-box { 
-            padding: 35px;
-            display: flex; flex-direction: column; text-decoration: none; color: #333; cursor: pointer;
-        }
-        .cal-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 25px; }
-        .cal-m { font-size: 28px; font-weight: 800; text-transform: uppercase; }
-        .cal-y { font-size: 28px; font-weight: 300; opacity: 0.5; }
-        .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; text-align: center; font-weight: 600; font-size: 14px; }
-        .cal-d { opacity: 0.4; margin-bottom: 5px; font-size: 12px; }
-        .cal-n { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-        .cal-n.today { background: #007aff; color: #fff; box-shadow: 0 4px 12px rgba(0,122,255,0.4); }
-        .todo { margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.05); }
-        .todo-i { display: flex; align-items: center; font-size: 15px; margin-bottom: 8px; font-weight: 500; }
-        .todo-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; }
-
-        /* 中间 APP (超巨大玻璃磁贴) */
         .center-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -108,77 +96,146 @@
 
         .glass-btn {
             width: 200px;
-            height: 200px; /* 巨大尺寸 */
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            height: 200px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 44px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-decoration: none; color: #333;
-            box-shadow: 0 18px 40px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+            text-decoration: none; color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             cursor: pointer;
             position: relative; overflow: hidden;
+        }
+        .glass-btn:hover { 
+            transform: scale(1.08) translateY(-5px);
+            background: rgba(255, 255, 255, 0.08); 
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 0 40px rgba(255,255,255,0.1);
         }
         .glass-btn::before {
             content: '';
             position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
             transition: 0.5s;
         }
         .glass-btn:hover::before { left: 100%; }
-        .glass-btn:hover { transform: scale(1.08); background: rgba(255, 255, 255, 0.6); box-shadow: 0 30px 60px rgba(0,0,0,0.18); }
 
-        .icon-img { font-size: 80px; margin-bottom: 12px; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.12)); }
-        .icon-label { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+        .icon-img { font-size: 80px; margin-bottom: 12px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.15)); }
+        .icon-label { font-size: 17px; font-weight: 600; letter-spacing: 1px; opacity: 0.9; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
-        /* 文件夹内的小图标 (2x2) */
         .folder-in { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90px; height: 90px; margin-bottom: 15px; }
-        .mini-box { background: rgba(255,255,255,0.7); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .mini-box { background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid rgba(255,255,255,0.05); }
 
-        /* 底部 Dock */
-        .dock {
+        .dock-container {
             position: fixed;
             bottom: 50px;
             width: 700px; max-width: 90%; height: 75px;
-            background: rgba(255,255,255,0.45);
-            backdrop-filter: blur(50px); border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px); 
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 40px;
-            display: flex;
-            align-items: center; padding: 0 35px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            display: flex; align-items: center; padding: 0 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             transition: 0.3s; z-index: 20;
         }
-        .dock:hover { width: 750px; background: rgba(255,255,255,0.65); }
-        .dock-in { width: 100%; background: transparent; border: none; font-size: 20px; margin-left: 15px; color: #333; outline: none; }
+        .dock-container:hover { border-color: rgba(255,255,255,0.3); background: rgba(10,10,10,0.6); }
 
-        /* 萌宠 */
-        .pet { position: fixed; bottom: 40px; right: 40px; z-index: 50; cursor: pointer; }
-        .bunny { width: 90px; height: 80px; background: #fff; border-radius: 50% 50% 45% 45%; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transition: 0.2s; }
-        .pet:hover .bunny { transform: translateY(-10px); }
-        .ear { position: absolute; top: -30px; width: 22px; height: 45px; background: #fff; border-radius: 20px; }
-        .el { left: 12px; transform: rotate(-10deg); } 
-        .er { right: 12px; transform: rotate(10deg); }
-        .eye { position: absolute; top: 35px; width: 10px; height: 10px; background: #333; border-radius: 50%; }
-        .yl { left: 22px; } .yr { right: 22px; }
-        .nose { position: absolute; top: 45px; left: 42px; width: 6px; height: 6px; background: #ff9a9e; border-radius: 50%; }
+        .search-icon-btn {
+            font-size: 22px;
+            opacity: 0.7; cursor: pointer; padding: 10px; transition: 0.2s; color: #fff;
+        }
+        .search-icon-btn:hover { opacity: 1; transform: scale(1.1); color: #4285f4; text-shadow: 0 0 15px #4285f4; }
 
-        /* 弹窗 */
-        .mask { position: fixed; inset: 0; background: rgba(255,255,255,0.4); backdrop-filter: blur(20px); z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; display: flex; justify-content: center; align-items: center; }
+        .search-form { flex: 1; display: flex; height: 100%; }
+        .dock-in { 
+            width: 100%;
+            height: 100%; background: transparent; border: none; 
+            font-size: 20px; margin-left: 10px; color: #fff; outline: none; font-weight: 300;
+        }
+        .dock-in::placeholder { color: rgba(255,255,255,0.3); }
+
+        .music-float {
+            position: fixed;
+            bottom: 40px; left: 40px;
+            width: 90px; height: 90px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            z-index: 50; cursor: pointer; transition: all 0.3s;
+            text-decoration: none;
+        }
+        .music-float:hover { transform: scale(1.15) rotate(10deg); border-color: #fa233b; box-shadow: 0 0 30px rgba(250, 35, 59, 0.5); }
+        .music-icon { font-size: 45px; color: #fa233b; filter: drop-shadow(0 0 10px rgba(250, 35, 59, 0.6)); }
+
+        .cat-link {
+            position: fixed;
+            bottom: 30px; right: 40px; width: 100px; height: 90px; z-index: 50; cursor: pointer;
+            transition: transform 0.3s ease; text-decoration: none; display: block;
+        }
+        .cat-link:hover { transform: translateY(-10px); }
+        .cat-face { position: absolute; bottom: 0; left: 10px; width: 80px; height: 65px; background: #fff; border-radius: 45px 45px 40px 40px; box-shadow: 0 0 25px rgba(255,255,255,0.1); z-index: 2; }
+        .cat-ear { position: absolute; top: 10px; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 40px solid #fff; z-index: 1; }
+        .cat-ear.left { left: 5px; transform: rotate(-15deg); } .cat-ear.right { right: 5px; transform: rotate(15deg); }
+        .cat-eye { position: absolute; top: 22px; width: 22px; height: 22px; background: #000; border-radius: 50%; overflow: hidden; z-index: 3; }
+        .cat-eye.left { left: 14px; } .cat-eye.right { right: 14px; }
+        .eye-white { position: absolute; width: 100%; height: 100%; background: #fff; border-radius: 50%; transform: scale(0.9); }
+        .eye-pupil { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: #000; border-radius: 50%; transform: translate(-50%, -50%); }
+        .eye-pupil::after { content: ''; position: absolute; top: 2px; right: 2px; width: 3px; height: 3px; background: #fff; border-radius: 50%; }
+        .cat-nose { position: absolute; top: 38px; left: 50%; transform: translateX(-50%); width: 8px; height: 6px; background: #ff9a9e; border-radius: 40% 40% 60% 60%; z-index: 3; }
+        .cat-mouth { position: absolute; top: 44px; left: 50%; transform: translateX(-50%); width: 20px; height: 10px; border: 2px solid transparent; border-bottom-color: #999; border-radius: 50%; z-index: 3; }
+        .cat-whisker { position: absolute; top: 38px; width: 25px; height: 1px; background: #ccc; z-index: 2; }
+        .cw-left { left: -10px; transform: rotate(5deg); } .cw-right { right: -10px; transform: rotate(-5deg); }
+
+
+        /* ================= 弹窗 ================= */
+        .mask { 
+            position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.01); 
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s ease; 
+            display: flex; justify-content: center; align-items: center;
+        }
         .mask.active { opacity: 1; pointer-events: auto; }
-        .box { background: #fff; width: 400px; padding: 30px; border-radius: 30px; box-shadow: 0 40px 80px rgba(0,0,0,0.2); transform: scale(0.9); transition: 0.3s; }
-        .mask.active .box { transform: scale(1); }
         
-        .link-title { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #333; }
+        .folder-box {
+            background: rgba(30, 30, 30, 0.5); 
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            width: 450px; padding: 40px; border-radius: 44px; 
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.15);
+            transform: scale(0.95); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .mask.active .folder-box { transform: scale(1); }
         
-        .link { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; background: #f2f2f7; border-radius: 14px; text-decoration: none; color: #333; font-weight: 600; transition: 0.2s; }
-        .link:hover { background: #007aff; color: #fff; }
-        .link-icon { margin-right: 12px; font-size: 20px; }
+        .folder-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 30px; align-self: flex-start; margin-left: 15px; }
+        .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 20px; width: 100%; }
+        .app-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #ccc; transition: 0.2s; cursor: pointer; }
+        .app-item:hover { transform: scale(1.05); color: #fff; }
+        .app-item:hover .app-icon-sq { filter: brightness(1.2); box-shadow: 0 0 25px rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+        .app-icon-sq {
+            width: 70px; height: 70px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; transition: 0.2s; margin-bottom: 10px; color: #fff;
+        }
+        .app-name { font-size: 13px; font-weight: 500; text-align: center; opacity: 0.8; width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+
     </style>
 </head>
 <body>
 
-    <div class="mesh-bg"></div>
+    <!-- 背景烟雾画布 -->
+    <canvas id="gl-canvas"></canvas>
+
+    <!-- 巨大的背景文字 Yeji -->
+    <div class="bg-text-container">
+        <div class="bg-text">Yeji</div>
+    </div>
 
     <div class="header-time">
         <div class="time-big" id="clock">00:00</div>
@@ -186,36 +243,25 @@
     </div>
 
     <div class="stage">
-        
-        <a href="https://music.apple.com/cn/playlist/favorite-songs/pl.u-DpU0rNzjNY" target="_blank" class="side-card music-box">
-            <div class="icon-img" style="color:#fa233b; font-size: 100px;">🎵</div>
-            <div class="icon-label" style="font-size: 24px;">Apple Music</div>
-            <div style="margin-top: 10px; opacity: 0.6; font-size: 14px;">点击打开歌单</div>
-        </a>
-
         <div class="center-grid">
-            
             <a href="https://www.bilibili.com" target="_blank" class="glass-btn">
                 <div class="icon-img" style="color:#fb7299">📺</div>
                 <div class="icon-label">Bilibili</div>
             </a>
-
             <div class="glass-btn" onclick="openModal('m-mail')">
                 <div class="folder-in">
                     <div class="mini-box">✉️</div><div class="mini-box">🏫</div>
-                    <div class="mini-box" style="opacity:0.3"></div><div class="mini-box" style="opacity:0.3"></div>
+                    <div class="mini-box" style="opacity:0.2"></div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
                 <div class="icon-label">邮箱</div>
             </div>
-
             <div class="glass-btn" onclick="openModal('m-ai')">
                 <div class="folder-in">
                     <div class="mini-box">🐋</div><div class="mini-box">✨</div>
-                    <div class="mini-box">⚛️</div><div class="mini-box" style="opacity:0.3"></div>
+                    <div class="mini-box">⚛️</div><div class="mini-box">🌙</div>
                 </div>
-                <div class="icon-label">AI 工具</div>
+                <div class="icon-label">AI</div>
             </div>
-
             <div class="glass-btn" onclick="openModal('m-lit')">
                 <div class="folder-in">
                     <div class="mini-box">90</div><div class="mini-box">🔬</div>
@@ -223,134 +269,289 @@
                 </div>
                 <div class="icon-label">检索文献</div>
             </div>
-
             <div class="glass-btn" onclick="openModal('m-tools')">
                 <div class="folder-in">
-                    <div class="mini-box">⚡️</div><div class="mini-box">🤖</div>
-                    <div class="mini-box" style="opacity:0.3"></div><div class="mini-box" style="opacity:0.3"></div>
+                    <div class="mini-box">☁️</div><div class="mini-box">👁️</div>
+                    <div class="mini-box">C</div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
                 <div class="icon-label">科研工具</div>
             </div>
-
             <div class="glass-btn" onclick="openModal('m-other')">
                 <div class="folder-in">
-                    <div class="mini-box" style="opacity:0.3"></div><div class="mini-box" style="opacity:0.3"></div>
-                    <div class="mini-box" style="opacity:0.3"></div><div class="mini-box" style="opacity:0.3"></div>
+                    <div class="mini-box" style="color:red">▶️</div><div class="mini-box" style="color:#0091ff">🗺️</div>
+                    <div class="mini-box" style="opacity:0.2"></div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
                 <div class="icon-label">其它</div>
             </div>
         </div>
-
-        <a href="https://www.icloud.com/calendar" target="_blank" class="side-card cal-box">
-            <div class="cal-h">
-                <span class="cal-m" id="cal-m">NOV</span>
-                <span class="cal-y">2025</span>
-            </div>
-            <div class="cal-g" id="cal-grid"></div>
-            <div class="todo">
-                <div class="todo-i"><div class="todo-dot" style="background:#ff9f0a"></div>点击查看我的日程</div>
-                <div class="todo-i"><div class="todo-dot" style="background:#30d158"></div>同步 iCloud 日历</div>
-            </div>
-        </a>
-
     </div>
 
-    <form action="https://www.bing.com/search" method="GET" target="_blank" class="dock">
-        <span style="font-size:22px; opacity:0.5">🔍</span>
-        <input type="text" name="q" class="dock-in" placeholder="Search or type URL..." autocomplete="off">
-    </form>
-
-    <div class="pet">
-        <div class="bunny">
-            <div class="ear el"></div><div class="ear er"></div>
-            <div class="eye yl"></div><div class="eye yr"></div>
-            <div class="nose"></div>
+    <div class="dock-container">
+        <div class="search-icon-btn" onclick="window.open('https://www.google.com', '_blank')" title="Open Google">
+            <i class="fas fa-search"></i>
         </div>
+        <form action="https://www.bing.com/search" method="GET" target="_blank" class="search-form">
+            <input type="text" name="q" class="dock-in" placeholder="Search..." autocomplete="off">
+        </form>
     </div>
 
+    <a href="https://music.apple.com/cn/playlist/favorite-songs/pl.u-DpU0rNzjNY" target="_blank" class="music-float">
+        <div class="music-icon">🎵</div>
+    </a>
+    <a href="https://space.bilibili.com/168178994/favlist?fid=3621461794&ftype=create&spm_id_from=333.1007.0.0" target="_blank" class="cat-link">
+        <div class="cat-ear left"></div><div class="cat-ear right"></div>
+        <div class="cat-face">
+            <div class="cat-eye left"><div class="eye-white"><div class="eye-pupil"></div></div></div>
+            <div class="cat-eye right"><div class="eye-white"><div class="eye-pupil"></div></div></div>
+            <div class="cat-nose"></div><div class="cat-mouth"></div><div class="cat-whisker cw-left"></div><div class="cat-whisker cw-right"></div>
+        </div>
+    </a>
+
+    <!-- 弹窗内容区 -->
     <div class="mask" id="m-mail" onclick="closeModal(event)">
-        <div class="box">
-            <div class="link-title">📮 我的邮箱</div>
-            <a href="https://mail.163.com" target="_blank" class="link">
-                <span class="link-icon">✉️</span> 163 邮箱
-            </a>
-            <a href="https://mail.stu.scau.edu.cn" target="_blank" class="link">
-                <span class="link-icon">🏫</span> 校园邮箱 (SCAU)
-            </a>
+        <div class="folder-box">
+            <div class="folder-title">邮箱</div>
+            <div class="apps-grid">
+                <a href="https://mail.163.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#6dd5ed">✉️</div>
+                    <div class="app-name">163 邮箱</div>
+                </a>
+                <a href="https://mail.stu.scau.edu.cn" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#2ecc71">🏫</div>
+                    <div class="app-name">SCAU 邮箱</div>
+                </a>
+            </div>
         </div>
     </div>
 
     <div class="mask" id="m-ai" onclick="closeModal(event)">
-        <div class="box">
-            <div class="link-title">🤖 AI 助手</div>
-            <a href="https://chat.deepseek.com" target="_blank" class="link">
-                <span class="link-icon">🐋</span> DeepSeek
-            </a>
-            <a href="https://gemini.google.com" target="_blank" class="link">
-                <span class="link-icon">✨</span> Gemini
-            </a>
-            <a href="https://www.bohrium.com" target="_blank" class="link">
-                <span class="link-icon">⚛️</span> 玻尔 Bohrium
-            </a>
-        </div>
-    </div>
-
-    <div class="mask" id="m-lit" onclick="closeModal(event)">
-        <div class="box">
-            <div class="link-title">📚 文献检索</div>
-            <a href="http://www.90tsg.com/" target="_blank" class="link">
-                <span class="link-icon">90</span> 90 图书馆
-            </a>
-            <a href="https://www.ablesci.com" target="_blank" class="link">
-                <span class="link-icon">🔬</span> 科研通
-            </a>
-            <a href="https://www.x-mol.com/" target="_blank" class="link">
-                <span class="link-icon">⚗️</span> X-MOL
-            </a>
-            <a href="https://lib.scau.edu.cn" target="_blank" class="link">
-                <span class="link-icon">🏫</span> 华农图书馆
-            </a>
-        </div>
-    </div>
-
-    <div class="mask" id="m-tools" onclick="closeModal(event)">
-        <div class="box">
-            <div class="link-title">⚡️ 科研工具</div>
-            <a href="https://featurize.cn" target="_blank" class="link">
-                <span class="link-icon">☁️</span> Featurize
-            </a>
-            <a href="https://roboflow.com/" target="_blank" class="link">
-                <span class="link-icon">👁️</span> Roboflow
-            </a>
-        </div>
-    </div>
-
-    <div class="mask" id="m-other" onclick="closeModal(event)">
-        <div class="box">
-            <div class="link-title">📦 其它</div>
-            <div style="text-align:center; padding:20px; color:#999;">
-                暂无内容
+        <div class="folder-box">
+            <div class="folder-title">AI</div>
+            <div class="apps-grid">
+                <a href="https://chat.deepseek.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#4c6ef5">🐋</div>
+                    <div class="app-name">DeepSeek</div>
+                </a>
+                <a href="https://gemini.google.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#8e44ad">✨</div>
+                    <div class="app-name">Gemini</div>
+                </a>
+                <a href="https://www.bohrium.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#00a8ff">⚛️</div>
+                    <div class="app-name">Bohrium</div>
+                </a>
+                <a href="https://www.kimi.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#fff">🌙</div>
+                    <div class="app-name">Kimi</div>
+                </a>
+                <a href="https://grok.com/?referrer=website" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#fff; font-weight:900; font-style:italic; font-family: 'Montserrat', sans-serif;">G</div>
+                    <div class="app-name">Grok</div>
+                </a>
+                <a href="https://chat.openai.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#10a37f">🧠</div>
+                    <div class="app-name">ChatGPT</div>
+                </a>
             </div>
         </div>
     </div>
 
-    <script>
-        /* 日历 */
-        function renderCal() {
-            const d = new Date();
-            const m = d.getMonth();
-            const t = d.getDate();
-            document.getElementById('cal-m').innerText = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][m];
-            const g = document.getElementById('cal-grid');
-            g.innerHTML = '<div class="cal-d">S</div><div class="cal-d">M</div><div class="cal-d">T</div><div class="cal-d">W</div><div class="cal-d">T</div><div class="cal-d">F</div><div class="cal-d">S</div>';
-            const s = new Date(d.getFullYear(), m, 1).getDay();
-            const n = new Date(d.getFullYear(), m+1, 0).getDate();
-            for(let i=0; i<s; i++) g.innerHTML += '<div></div>';
-            for(let i=1; i<=n; i++) g.innerHTML += `<div class="cal-n ${i===t?'today':''}">${i}</div>`;
-        }
-        renderCal();
+    <div class="mask" id="m-lit" onclick="closeModal(event)">
+        <div class="folder-box">
+            <div class="folder-title">文献检索</div>
+            <div class="apps-grid">
+                <a href="http://www.90tsg.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#ff9966">90</div>
+                    <div class="app-name">90 图书馆</div>
+                </a>
+                <a href="https://www.ablesci.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#0984e3">🔬</div>
+                    <div class="app-name">科研通</div>
+                </a>
+                <a href="https://www.x-mol.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#2ecc71">⚗️</div>
+                    <div class="app-name">X-MOL</div>
+                </a>
+            </div>
+        </div>
+    </div>
 
-        /* 时间 */
+    <div class="mask" id="m-tools" onclick="closeModal(event)">
+        <div class="folder-box">
+            <div class="folder-title">科研工具</div>
+            <div class="apps-grid">
+                <a href="https://featurize.cn" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#fdcb6e">☁️</div>
+                    <div class="app-name">Featurize</div>
+                </a>
+                <a href="https://roboflow.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#6c5ce7">👁️</div>
+                    <div class="app-name">Roboflow</div>
+                </a>
+                <a href="https://www.csdn.net/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#e33e33; font-weight:bold;">C</div>
+                    <div class="app-name">CSDN</div>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mask" id="m-other" onclick="closeModal(event)">
+        <div class="folder-box">
+            <div class="folder-title">其它</div>
+            <div class="apps-grid">
+               <a href="https://www.youtube.com" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#ff0000">▶️</div>
+                    <div class="app-name">YouTube</div>
+                </a>
+                <a href="https://ditu.amap.com/" target="_blank" class="app-item">
+                    <div class="app-icon-sq" style="color:#0091ff">🗺️</div>
+                    <div class="app-name">高德地图</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shader 逻辑 -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+        attribute vec2 a_position;
+        void main() {
+            gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform float u_time;
+        uniform vec2 u_resolution;
+
+        // 随机噪声函数
+        float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+        }
+
+        // 分形布朗运动 (FBM) - 生成烟雾纹理
+        float fbm(vec2 p) {
+            float v = 0.0;
+            float a = 0.5;
+            vec2 shift = vec2(100.0);
+            mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+            for (int i = 0; i < 5; ++i) {
+                v += a * noise(p);
+                p = rot * p * 2.0 + shift;
+                a *= 0.5;
+            }
+            return v;
+        }
+
+        void main() {
+            vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+            uv.x *= u_resolution.x / u_resolution.y;
+            
+            vec2 q = uv;
+            
+            // ======== 核心修改：大幅减慢时间速度 (0.05) ========
+            float t = u_time * 0.05; 
+
+            float flow = fbm(q * 2.5 + vec2(t, q.y * 0.5));
+            float smoke = fbm(q * 4.0 + flow + vec2(t * 1.5, 0.0));
+
+            // 基础颜色：极深的蓝黑色
+            vec3 color = vec3(0.01, 0.02, 0.05);
+            
+            // 光照强度：越往右越亮
+            float lightIntensity = smoothstep(0.2, 1.8, uv.x);
+            
+            // 烟雾亮度
+            float smokeBrightness = smoke * lightIntensity * 1.5;
+            
+            // 烟雾颜色：冷白/微蓝
+            vec3 smokeColor = vec3(0.7, 0.85, 1.0);
+            
+            // 混合
+            float finalMix = pow(smokeBrightness, 1.2);
+            color = mix(color, smokeColor, finalMix);
+            
+            // 高光增强
+            if(finalMix > 0.8) {
+                color += vec3(0.3) * (finalMix - 0.8) * 5.0;
+            }
+            
+            // 左侧压暗
+            color *= smoothstep(0.0, 0.6, uv.x + 0.1);
+
+            gl_FragColor = vec4(color, 1.0);
+        }
+    </script>
+
+    <script>
+        const canvas = document.getElementById("gl-canvas");
+        const gl = canvas.getContext("webgl");
+
+        if (!gl) {
+            console.error("WebGL not supported");
+        } else {
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+            window.addEventListener("resize", resizeCanvas);
+            resizeCanvas();
+
+            const vertexShaderSource = document.getElementById("vertexShader").text;
+            const fragmentShaderSource = document.getElementById("fragmentShader").text;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+
+            gl.useProgram(program);
+
+            const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1, 1, -1, -1, 1,
+                -1, 1, 1, -1, 1, 1,
+            ]), gl.STATIC_DRAW);
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+
+            const timeUniformLocation = gl.getUniformLocation(program, "u_time");
+            const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+
+            function render(time) {
+                time *= 0.001;
+                gl.uniform1f(timeUniformLocation, time);
+                gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        }
+
         function tick() {
             const d = new Date();
             const w = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
@@ -361,6 +562,18 @@
 
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(e) { if(e.target.classList.contains('mask')) e.target.classList.remove('active'); }
+
+        document.addEventListener('mousemove', (e) => {
+            const pupils = document.querySelectorAll('.eye-pupil');
+            pupils.forEach((pupil) => {
+                const eyeRect = pupil.parentElement.getBoundingClientRect();
+                const x = eyeRect.left + eyeRect.width / 2;
+                const y = eyeRect.top + eyeRect.height / 2;
+                const rad = Math.atan2(e.clientY - y, e.clientX - x);
+                const dist = Math.min(5, Math.hypot(e.clientX - x, e.clientY - y) / 15);
+                pupil.style.transform = `translate(calc(-50% + ${Math.cos(rad) * dist}px), calc(-50% + ${Math.sin(rad) * dist}px))`;
+            });
+        });
     </script>
 </body>
 </html>
