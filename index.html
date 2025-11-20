@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yeji Space | Grok Style</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- 引入更有艺术感、几何感的字体 Space Grotesk 和 Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #000000;
@@ -16,7 +19,7 @@
 
         body {
             min-height: 100vh;
-            font-family: -apple-system, "SF Pro Display", "PingFang SC", sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             color: var(--text-color);
             overflow: hidden;
             display: flex;
@@ -26,158 +29,183 @@
             position: relative;
         }
 
-        /* ================= 核心修改：WebGL 画布 ================= */
-        #gl-canvas {
+        /* ================= 新背景容器 (Three.js) ================= */
+        #canvas-container {
             position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: -2;
-            /* 稍微增加对比度，让黑更黑，光更亮 */
-            filter: contrast(1.1) brightness(1.0);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2; /* 放在最底层 */
+            background-color: #000000;
         }
 
-        /* ================= 核心修改：背景大字 Yeji (完美复刻 Grok 风格) ================= */
+        /* ================= 修改后的文字风格 (Grok 风格) ================= */
         .bg-text-container {
             position: fixed;
-            top: 50%; left: 50%;
+            top: 45%; /* 稍微往上提一点，留出空间给下面的按钮 */
+            left: 50%;
             transform: translate(-50%, -50%);
             z-index: -1; 
             pointer-events: none;
-            /* 关键：Overlay 混合模式让文字根据背景亮度变化 */
-            mix-blend-mode: overlay;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             width: 100%;
+            text-align: center;
+            /* 增加一点入场动画 */
+            animation: textFadeIn 1.5s ease-out forwards;
+        }
+
+        @keyframes textFadeIn {
+            from { opacity: 0; transform: translate(-50%, -45%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
         }
 
         .bg-text {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 900;
-            /* 根据 Yeji 四个字母调整大小，让它撑满屏幕中心但不过大 */
-            font-size: 30vw; 
-            text-transform: uppercase;
-            /* 稍微紧凑一点的字间距 */
-            letter-spacing: -1vw; 
+            /* 使用 Space Grotesk 字体，它的笔画带有几何切角，类似 Grok logo */
+            font-family: 'Space Grotesk', sans-serif; 
+            font-weight: 700; /* 粗体 */
+            
+            /* 大小调整：之前是 35vw 太大了，现在调到 18vw，接近图片比例 */
+            font-size: 18vw; 
+            
+            /* 不强制全大写，保留 Yeji */
+            text-transform: none; 
+            
+            /* 稍微缩紧字间距，让字母挨在一起，更有 Logo 感 */
+            letter-spacing: -0.04em; 
+            
             line-height: 1;
             white-space: nowrap;
             
-            /* Grok 风格精髓：
-               1. 不是纯白，带一点透明度 (0.85)，配合 Overlay 产生玻璃感。
-               2. 边缘有一点点模糊 (blur 3px)，模拟光晕。
-               3. 稍微降低文字本身亮度，让背景的高光“穿透”文字。
-            */
-            color: rgba(255, 255, 255, 0.85);
-            filter: blur(3px); 
+            /* Grok 核心文字样式移植：模拟光照 */
+            background: linear-gradient(120deg, #888888 0%, #ffffff 50%, #ffffff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent; /* 文字本身透明，只显示背景渐变 */
             
-            /* 模拟文字表面微弱的金属光泽 */
-            text-shadow: 0 0 30px rgba(255,255,255,0.1);
+            /* 混合模式：这是灵魂，让文字像玻璃一样透出背景的烟雾 */
+            mix-blend-mode: overlay; 
+            opacity: 0.95;
+            
+            /* 边缘处理 */
+            filter: drop-shadow(0 0 30px rgba(255,255,255,0.1));
         }
 
-
-        /* ================= UI 界面 (保持原样) ================= */
+        /* ================= UI 界面 ================= */
         
-        .header-time { margin-top: 10vh; text-align: center; z-index: 10; transition: all 0.3s; text-shadow: 0 0 20px rgba(0,0,0,1); }
-        .time-big { font-size: 100px; font-weight: 700; letter-spacing: -3px; line-height: 1; color: #fff; }
-        .date-text { font-size: 20px; font-weight: 500; opacity: 0.6; margin-top: 10px; color: #ccc; }
+        /* 时间稍微调小一点，避免抢 Yeji 的风头 */
+        .header-time { 
+            position: absolute;
+            top: 5vh;
+            text-align: center; 
+            z-index: 10; 
+            transition: all 0.3s; 
+        }
+        .time-big { font-size: 24px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.5); }
+        .date-text { display: none; } /* 极简模式，日期先隐藏，或者做得很小 */
 
+        /* 舞台区域稍微下移，避开中间的大字 */
         .stage {
+            position: absolute;
+            bottom: 22vh; /* 靠下放 */
+            width: 100%; 
+            height: auto; 
             display: flex;
-            width: 100%; height: auto; align-items: center; justify-content: center;
-            margin-top: 50px; z-index: 5;
+            align-items: center; 
+            justify-content: center;
+            z-index: 5;
         }
 
         .center-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 45px;
+            display: flex; /* 改成横向排列，更像 Dock 栏上的应用 */
+            gap: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
+        /* 修改按钮样式，让它更小巧精致，适配新布局 */
         .glass-btn {
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 44px;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-decoration: none; color: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.3s ease;
             cursor: pointer;
             position: relative; overflow: hidden;
         }
         .glass-btn:hover { 
-            transform: scale(1.08) translateY(-5px);
-            background: rgba(255, 255, 255, 0.08); 
-            border-color: rgba(255,255,255,0.3);
-            box-shadow: 0 0 40px rgba(255,255,255,0.1);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1); 
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
-        .glass-btn::before {
-            content: '';
-            position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: 0.5s;
-        }
-        .glass-btn:hover::before { left: 100%; }
+        
+        .icon-img { font-size: 32px; margin-bottom: 0; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
+        .icon-label { display: none; } /* 图标模式，隐藏文字，保持界面干净 */
+        
+        /* 文件夹图标微调 */
+        .folder-in { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 40px; height: 40px; margin: 0; }
+        .mini-box { background: rgba(255,255,255,0.1); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: none; }
 
-        .icon-img { font-size: 80px; margin-bottom: 12px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.15)); }
-        .icon-label { font-size: 17px; font-weight: 600; letter-spacing: 1px; opacity: 0.9; text-shadow: 0 2px 10px rgba(0,0,0,1); }
 
-        .folder-in { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90px; height: 90px; margin-bottom: 15px; }
-        .mini-box { background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid rgba(255,255,255,0.05); }
-
+        /* 搜索栏 */
         .dock-container {
             position: fixed;
-            bottom: 50px;
-            width: 700px; max-width: 90%; height: 75px;
-            background: rgba(0, 0, 0, 0.4);
+            bottom: 8vh;
+            width: 600px; max-width: 85%; height: 60px;
+            background: rgba(10, 10, 10, 0.6); /* 深色背景 */
             backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 40px;
-            display: flex; align-items: center; padding: 0 25px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 30px;
+            display: flex; align-items: center; padding: 0 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             transition: 0.3s; z-index: 20;
         }
-        .dock-container:hover { border-color: rgba(255,255,255,0.3); background: rgba(10,10,10,0.6); }
+        .dock-container:hover { border-color: rgba(255,255,255,0.3); background: rgba(20,20,20,0.8); }
 
         .search-icon-btn {
-            font-size: 22px;
+            font-size: 18px;
             opacity: 0.7; cursor: pointer; padding: 10px; transition: 0.2s; color: #fff;
         }
-        .search-icon-btn:hover { opacity: 1; transform: scale(1.1); color: #4285f4; text-shadow: 0 0 15px #4285f4; }
+        .search-icon-btn:hover { opacity: 1; color: #fff; text-shadow: 0 0 10px #fff; }
 
         .search-form { flex: 1; display: flex; height: 100%; }
         .dock-in { 
             width: 100%;
             height: 100%; background: transparent; border: none; 
-            font-size: 20px; margin-left: 10px; color: #fff; outline: none; font-weight: 300;
+            font-size: 16px; margin-left: 10px; color: #fff; outline: none; font-weight: 400;
+            font-family: 'Inter', sans-serif;
         }
         .dock-in::placeholder { color: rgba(255,255,255,0.3); }
 
+        /* 音乐和猫 */
         .music-float {
             position: fixed;
             bottom: 40px; left: 40px;
-            width: 90px; height: 90px;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             z-index: 50; cursor: pointer; transition: all 0.3s;
-            text-decoration: none;
         }
-        .music-float:hover { transform: scale(1.15) rotate(10deg); border-color: #fa233b; box-shadow: 0 0 30px rgba(250, 35, 59, 0.5); }
-        .music-icon { font-size: 45px; color: #fa233b; filter: drop-shadow(0 0 10px rgba(250, 35, 59, 0.6)); }
+        .music-float:hover { transform: scale(1.1) rotate(10deg); border-color: #fa233b; }
+        .music-icon { font-size: 20px; color: #fa233b; }
 
         .cat-link {
             position: fixed;
-            bottom: 30px; right: 40px; width: 100px; height: 90px; z-index: 50; cursor: pointer;
+            bottom: 30px; right: 40px; width: 60px; height: 50px; z-index: 50; cursor: pointer;
             transition: transform 0.3s ease; text-decoration: none; display: block;
+            transform: scale(0.6); transform-origin: bottom right;
         }
-        .cat-link:hover { transform: translateY(-10px); }
+        .cat-link:hover { transform: scale(0.7) translateY(-10px); }
         .cat-face { position: absolute; bottom: 0; left: 10px; width: 80px; height: 65px; background: #fff; border-radius: 45px 45px 40px 40px; box-shadow: 0 0 25px rgba(255,255,255,0.1); z-index: 2; }
         .cat-ear { position: absolute; top: 10px; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-bottom: 40px solid #fff; z-index: 1; }
         .cat-ear.left { left: 5px; transform: rotate(-15deg); } .cat-ear.right { right: 5px; transform: rotate(15deg); }
@@ -194,107 +222,109 @@
 
         /* ================= 弹窗 ================= */
         .mask { 
-            position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.01); 
-            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            z-index: 100; opacity: 0; pointer-events: none; transition: 0.4s ease; 
+            position: fixed;
+            inset: 0; 
+            background: rgba(0,0,0,0.6); /* 背景压暗一点 */
+            backdrop-filter: blur(15px); 
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s ease; 
             display: flex; justify-content: center; align-items: center;
         }
         .mask.active { opacity: 1; pointer-events: auto; }
         
         .folder-box {
-            background: rgba(30, 30, 30, 0.5); 
-            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
-            width: 450px; padding: 40px; border-radius: 44px; 
-            box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.15);
-            transform: scale(0.95); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            width: 400px; padding: 30px; border-radius: 30px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: scale(0.9); transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
             display: flex; flex-direction: column; align-items: center;
         }
         .mask.active .folder-box { transform: scale(1); }
         
-        .folder-title { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 30px; align-self: flex-start; margin-left: 15px; }
-        .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 20px; width: 100%; }
+        .folder-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 25px; align-self: flex-start; margin-left: 5px; font-family: 'Inter', sans-serif;}
+        .apps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; }
         .app-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #ccc; transition: 0.2s; cursor: pointer; }
         .app-item:hover { transform: scale(1.05); color: #fff; }
-        .app-item:hover .app-icon-sq { filter: brightness(1.2); box-shadow: 0 0 25px rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+        .app-item:hover .app-icon-sq { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); }
         .app-icon-sq {
-            width: 70px; height: 70px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            font-size: 32px; transition: 0.2s; margin-bottom: 10px; color: #fff;
+            width: 60px; height: 60px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; transition: 0.2s; margin-bottom: 8px; color: #fff;
         }
-        .app-name { font-size: 13px; font-weight: 500; text-align: center; opacity: 0.8; width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .app-name { font-size: 12px; font-weight: 400; opacity: 0.7; }
+
+        /* 响应式：手机上调整大小 */
+        @media (max-width: 768px) {
+            .bg-text { font-size: 28vw; } /* 手机上稍微大一点 */
+            .stage { bottom: 20vh; width: 90%; }
+            .center-grid { width: 100%; justify-content: space-between; padding: 15px; }
+            .glass-btn { width: 16vw; height: 16vw; }
+            .dock-container { bottom: 30px; }
+        }
 
     </style>
 </head>
 <body>
 
-    <!-- 背景烟雾画布 -->
-    <canvas id="gl-canvas"></canvas>
+    <!-- 背景容器 -->
+    <div id="canvas-container"></div>
 
-    <!-- 巨大的背景文字 Yeji -->
+    <!-- 顶部时间 (简化版) -->
+    <div class="header-time">
+        <div class="time-big" id="clock">00:00</div>
+    </div>
+
+    <!-- 巨大文字背景 (Yeji Logo) -->
     <div class="bg-text-container">
         <div class="bg-text">Yeji</div>
     </div>
 
-    <div class="header-time">
-        <div class="time-big" id="clock">00:00</div>
-        <div class="date-text" id="date">Loading...</div>
-    </div>
-
+    <!-- UI 主体 (图标栏) -->
     <div class="stage">
         <div class="center-grid">
-            <a href="https://www.bilibili.com" target="_blank" class="glass-btn">
+            <a href="https://www.bilibili.com" target="_blank" class="glass-btn" title="Bilibili">
                 <div class="icon-img" style="color:#fb7299">📺</div>
-                <div class="icon-label">Bilibili</div>
             </a>
-            <div class="glass-btn" onclick="openModal('m-mail')">
+            <div class="glass-btn" onclick="openModal('m-mail')" title="邮箱">
                 <div class="folder-in">
                     <div class="mini-box">✉️</div><div class="mini-box">🏫</div>
-                    <div class="mini-box" style="opacity:0.2"></div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
-                <div class="icon-label">邮箱</div>
             </div>
-            <div class="glass-btn" onclick="openModal('m-ai')">
+            <div class="glass-btn" onclick="openModal('m-ai')" title="AI">
                 <div class="folder-in">
                     <div class="mini-box">🐋</div><div class="mini-box">✨</div>
-                    <div class="mini-box">⚛️</div><div class="mini-box">🌙</div>
                 </div>
-                <div class="icon-label">AI</div>
             </div>
-            <div class="glass-btn" onclick="openModal('m-lit')">
+            <div class="glass-btn" onclick="openModal('m-lit')" title="文献">
                 <div class="folder-in">
                     <div class="mini-box">90</div><div class="mini-box">🔬</div>
-                    <div class="mini-box">⚗️</div><div class="mini-box">📚</div>
                 </div>
-                <div class="icon-label">检索文献</div>
             </div>
-            <div class="glass-btn" onclick="openModal('m-tools')">
+            <div class="glass-btn" onclick="openModal('m-tools')" title="工具">
                 <div class="folder-in">
                     <div class="mini-box">☁️</div><div class="mini-box">👁️</div>
-                    <div class="mini-box">C</div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
-                <div class="icon-label">科研工具</div>
             </div>
-            <div class="glass-btn" onclick="openModal('m-other')">
+            <div class="glass-btn" onclick="openModal('m-other')" title="其它">
                 <div class="folder-in">
                     <div class="mini-box" style="color:red">▶️</div><div class="mini-box" style="color:#0091ff">🗺️</div>
-                    <div class="mini-box" style="opacity:0.2"></div><div class="mini-box" style="opacity:0.2"></div>
                 </div>
-                <div class="icon-label">其它</div>
             </div>
         </div>
     </div>
 
+    <!-- 搜索框 -->
     <div class="dock-container">
         <div class="search-icon-btn" onclick="window.open('https://www.google.com', '_blank')" title="Open Google">
             <i class="fas fa-search"></i>
         </div>
         <form action="https://www.bing.com/search" method="GET" target="_blank" class="search-form">
-            <input type="text" name="q" class="dock-in" placeholder="Search..." autocomplete="off">
+            <input type="text" name="q" class="dock-in" placeholder="What do you want to know?" autocomplete="off">
         </form>
     </div>
 
+    <!-- 角落小组件 -->
     <a href="https://music.apple.com/cn/playlist/favorite-songs/pl.u-DpU0rNzjNY" target="_blank" class="music-float">
         <div class="music-icon">🎵</div>
     </a>
@@ -307,18 +337,18 @@
         </div>
     </a>
 
-    <!-- 弹窗内容区 -->
+    <!-- 弹窗内容 -->
     <div class="mask" id="m-mail" onclick="closeModal(event)">
         <div class="folder-box">
             <div class="folder-title">邮箱</div>
             <div class="apps-grid">
                 <a href="https://mail.163.com" target="_blank" class="app-item">
                     <div class="app-icon-sq" style="color:#6dd5ed">✉️</div>
-                    <div class="app-name">163 邮箱</div>
+                    <div class="app-name">163</div>
                 </a>
                 <a href="https://mail.stu.scau.edu.cn" target="_blank" class="app-item">
                     <div class="app-icon-sq" style="color:#2ecc71">🏫</div>
-                    <div class="app-name">SCAU 邮箱</div>
+                    <div class="app-name">SCAU</div>
                 </a>
             </div>
         </div>
@@ -345,7 +375,7 @@
                     <div class="app-name">Kimi</div>
                 </a>
                 <a href="https://grok.com/?referrer=website" target="_blank" class="app-item">
-                    <div class="app-icon-sq" style="color:#fff; font-weight:900; font-style:italic; font-family: 'Montserrat', sans-serif;">G</div>
+                    <div class="app-icon-sq" style="font-family: 'Space Grotesk', sans-serif; font-weight: bold;">G</div>
                     <div class="app-name">Grok</div>
                 </a>
                 <a href="https://chat.openai.com/" target="_blank" class="app-item">
@@ -412,151 +442,155 @@
         </div>
     </div>
 
-    <!-- Shader 逻辑 -->
-    <script id="vertexShader" type="x-shader/x-vertex">
-        attribute vec2 a_position;
-        void main() {
-            gl_Position = vec4(a_position, 0, 1);
-        }
-    </script>
-    <script id="fragmentShader" type="x-shader/x-fragment">
-        precision mediump float;
-        uniform float u_time;
-        uniform vec2 u_resolution;
-
-        // 随机噪声函数
-        float hash(vec2 p) {
-            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-        }
-
-        float noise(vec2 p) {
-            vec2 i = floor(p);
-            vec2 f = fract(p);
-            vec2 u = f * f * (3.0 - 2.0 * f);
-            return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
-                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-        }
-
-        // 分形布朗运动 (FBM) - 生成烟雾纹理
-        float fbm(vec2 p) {
-            float v = 0.0;
-            float a = 0.5;
-            vec2 shift = vec2(100.0);
-            mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
-            for (int i = 0; i < 5; ++i) {
-                v += a * noise(p);
-                p = rot * p * 2.0 + shift;
-                a *= 0.5;
-            }
-            return v;
-        }
-
-        void main() {
-            vec2 uv = gl_FragCoord.xy / u_resolution.xy;
-            uv.x *= u_resolution.x / u_resolution.y;
-            
-            vec2 q = uv;
-            
-            // ======== 核心修改：大幅减慢时间速度 (0.05) ========
-            float t = u_time * 0.05; 
-
-            float flow = fbm(q * 2.5 + vec2(t, q.y * 0.5));
-            float smoke = fbm(q * 4.0 + flow + vec2(t * 1.5, 0.0));
-
-            // 基础颜色：极深的蓝黑色
-            vec3 color = vec3(0.01, 0.02, 0.05);
-            
-            // 光照强度：越往右越亮
-            float lightIntensity = smoothstep(0.2, 1.8, uv.x);
-            
-            // 烟雾亮度
-            float smokeBrightness = smoke * lightIntensity * 1.5;
-            
-            // 烟雾颜色：冷白/微蓝
-            vec3 smokeColor = vec3(0.7, 0.85, 1.0);
-            
-            // 混合
-            float finalMix = pow(smokeBrightness, 1.2);
-            color = mix(color, smokeColor, finalMix);
-            
-            // 高光增强
-            if(finalMix > 0.8) {
-                color += vec3(0.3) * (finalMix - 0.8) * 5.0;
-            }
-            
-            // 左侧压暗
-            color *= smoothstep(0.0, 0.6, uv.x + 0.1);
-
-            gl_FragColor = vec4(color, 1.0);
-        }
-    </script>
-
+    <!-- 逻辑脚本： Three.js 背景逻辑 + UI 逻辑 -->
     <script>
-        const canvas = document.getElementById("gl-canvas");
-        const gl = canvas.getContext("webgl");
+        // ================= PART 1: Three.js 背景逻辑 =================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: false });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        container.appendChild(renderer.domElement);
 
-        if (!gl) {
-            console.error("WebGL not supported");
-        } else {
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                gl.viewport(0, 0, canvas.width, canvas.height);
+        const geometry = new THREE.PlaneGeometry(2, 2);
+
+        // GLSL SHADER 
+        const fragmentShader = `
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            uniform vec2 u_mouse;
+
+            // Noise functions
+            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+            float snoise(vec2 v) {
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                vec2 i  = floor(v + dot(v, C.yy) );
+                vec2 x0 = v -   i + dot(i, C.xx);
+                vec2 i1;
+                i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.xxzz;
+                x12.xy -= i1;
+                i = mod289(i); 
+                vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                m = m*m ;
+                m = m*m ;
+                vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                vec3 h = abs(x) - 0.5;
+                vec3 ox = floor(x + 0.5);
+                vec3 a0 = x - ox;
+                m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+                vec3 g;
+                g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                return 130.0 * dot(m, g);
             }
-            window.addEventListener("resize", resizeCanvas);
-            resizeCanvas();
 
-            const vertexShaderSource = document.getElementById("vertexShader").text;
-            const fragmentShaderSource = document.getElementById("fragmentShader").text;
-
-            function createShader(gl, type, source) {
-                const shader = gl.createShader(type);
-                gl.shaderSource(shader, source);
-                gl.compileShader(shader);
-                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-                    gl.deleteShader(shader);
-                    return null;
+            float fbm(vec2 st) {
+                float value = 0.0;
+                float amplitude = 0.5;
+                for (int i = 0; i < 5; i++) {
+                    value += amplitude * snoise(st);
+                    st *= 2.0;
+                    amplitude *= 0.5;
                 }
-                return shader;
+                return value;
             }
 
-            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-            const program = gl.createProgram();
-            gl.attachShader(program, vertexShader);
-            gl.attachShader(program, fragmentShader);
-            gl.linkProgram(program);
-
-            gl.useProgram(program);
-
-            const positionAttributeLocation = gl.getAttribLocation(program, "a_position");
-            const positionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-                -1, -1, 1, -1, -1, 1,
-                -1, 1, 1, -1, 1, 1,
-            ]), gl.STATIC_DRAW);
-            gl.enableVertexAttribArray(positionAttributeLocation);
-            gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-
-            const timeUniformLocation = gl.getUniformLocation(program, "u_time");
-            const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-
-            function render(time) {
-                time *= 0.001;
-                gl.uniform1f(timeUniformLocation, time);
-                gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-                requestAnimationFrame(render);
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
             }
-            requestAnimationFrame(render);
+
+            void main() {
+                vec2 st = gl_FragCoord.xy / u_resolution.xy;
+                st.x *= u_resolution.x / u_resolution.y;
+                vec2 uv = st;
+
+                // Smoke flow
+                vec2 q = vec2(0.);
+                q.x = fbm( st + 0.1 * u_time );
+                q.y = fbm( st + vec2(1.0));
+                vec2 r = vec2(0.);
+                r.x = fbm( st + 1.0*q + vec2(1.7,9.2)+ 0.15*u_time );
+                r.y = fbm( st + 1.0*q + vec2(8.3,2.8)+ 0.126*u_time);
+                float f = fbm(st + r);
+
+                // Colors
+                vec3 colorBlack = vec3(0.0, 0.0, 0.0);
+                vec3 colorDarkBlue = vec3(0.05, 0.08, 0.2);
+                vec3 colorLight = vec3(0.7, 0.8, 1.0);
+
+                // Mixing
+                vec3 color = mix(colorBlack, colorDarkBlue, clamp((f*f)*4.0,0.0,1.0));
+                color = mix(color, colorLight, clamp(length(q),0.0,1.0));
+                color = mix(color, color * f * f * f + 0.6 * f * f + 0.5 * f, 1.0);
+                
+                // Light beam
+                float lightGradient = smoothstep(-0.5, 2.0, uv.x); 
+                float mouseInfluence = (u_mouse.x / u_resolution.x) * 0.5;
+                lightGradient += mouseInfluence * 0.2;
+                color *= lightGradient;
+
+                // Bloom
+                float rightSideGlow = smoothstep(1.0, 2.5, uv.x + fbm(uv * 2.0 - u_time * 0.2)); 
+                color += vec3(0.8, 0.9, 1.0) * rightSideGlow * 0.5;
+
+                // Grain
+                float grainStrength = 0.12; 
+                float grain = (random(uv + u_time) - 0.5) * grainStrength;
+                color += grain * (1.0 - rightSideGlow * 0.5);
+                
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        const uniforms = {
+            u_time: { value: 0.0 },
+            u_resolution: { value: new THREE.Vector2() },
+            u_mouse: { value: new THREE.Vector2() }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: uniforms,
+            fragmentShader: fragmentShader,
+            vertexShader: `void main() { gl_Position = vec4( position, 1.0 ); }`
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+
+        function onWindowResize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            uniforms.u_resolution.value.x = renderer.domElement.width;
+            uniforms.u_resolution.value.y = renderer.domElement.height;
         }
+        window.addEventListener('resize', onWindowResize);
+        onWindowResize();
 
+        window.addEventListener('mousemove', (e) => {
+            uniforms.u_mouse.value.x = e.clientX;
+            uniforms.u_mouse.value.y = window.innerHeight - e.clientY;
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            uniforms.u_time.value = clock.getElapsedTime();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+
+        // ================= PART 2: UI 逻辑 =================
         function tick() {
             const d = new Date();
             const w = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
             document.getElementById('clock').innerText = d.toLocaleTimeString('zh-CN',{hour12:false,hour:'2-digit',minute:'2-digit'});
-            document.getElementById('date').innerText = `${d.getMonth()+1}月${d.getDate()}日 ${w[d.getDay()]}`;
         }
         setInterval(tick, 1000); tick();
 
